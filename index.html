@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SNAP//QUICKADD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand"><span class="brand-dot"></span> SNAP//QUICKADD</div>
+      <div class="header-right">
+        <span id="connStatus" class="conn-status offline">● OFFLINE</span>
+        <button id="musicBtn" class="icon-btn" title="Music on/off" aria-label="Music">🎵</button>
+        <button id="muteBtn" class="icon-btn" title="Sound effects on/off" aria-label="Sound effects">🔊</button>
+        <button id="loginButton" class="login-button">LOG IN</button>
+      </div>
+    </header>
+
+    <main class="hero-panel">
+      <!-- ===================== HOME ===================== -->
+      <section class="view" data-view="home">
+        <div class="hero-title">
+          <div class="icon-circle">👻</div>
+          <h1>QUICK ADD</h1>
+          <p class="tagline">Connect your Snap. Let the bot scout nearby matches.</p>
+        </div>
+
+        <section class="nav-grid">
+          <button class="nav-card active" data-go="qadd">
+            <span>SCAN</span><small>Add from a screenshot</small>
+          </button>
+          <button class="nav-card" data-go="stats">
+            <span>STATS</span><small>Log Add › Text › Hangout</small>
+          </button>
+          <button class="nav-card" data-go="leaderboard">
+            <span>LEADERBOARD</span><small>Top scouts &amp; closers</small>
+          </button>
+          <button class="nav-card" data-go="stacys">
+            <span>STACY'S</span><small>People you've flagged ★</small>
+          </button>
+          <button class="nav-card" data-go="account">
+            <span>ACCOUNT</span><small>Profile + connection</small>
+            <span class="status-dot"></span>
+          </button>
+        </section>
+
+        <section class="quickadd-panel">
+          <h2>SCOUT FILTERS</h2>
+          <p>The bot only surfaces profiles that match every rule:</p>
+          <ul>
+            <li>≤ 7 mutual friends</li>
+            <li>Female profiles only</li>
+            <li>Within your set radius</li>
+          </ul>
+          <div class="controls">
+            <button id="connectButton" class="primary-button">Connect Snapchat</button>
+            <button class="secondary-button" data-go="qadd">Open Scan</button>
+          </div>
+        </section>
+      </section>
+
+      <!-- ===================== QUICK ADD SCANNER ===================== -->
+      <section class="view hidden" data-view="qadd">
+        <div class="view-head">
+          <button class="back-btn" data-go="home">‹ MENU</button>
+          <h2 class="view-title">SCAN</h2>
+        </div>
+
+        <p class="muted block-sub">
+          Upload a full-screen <strong>Quick Add</strong> screenshot, or a screen-recording of you
+          scrolling the whole list. A vision model reads the usernames — then you confirm before adding.
+        </p>
+
+        <div class="upload-row">
+          <label class="upload-tile" id="shotTile">
+            <input type="file" id="shotFile" accept="image/*" hidden />
+            <span class="ut-icon">📸</span>
+            <span class="ut-title">Screenshot</span>
+            <span class="ut-sub">One full screen</span>
+          </label>
+          <label class="upload-tile" id="vidTile">
+            <input type="file" id="vidFile" accept="video/*" hidden />
+            <span class="ut-icon">🎥</span>
+            <span class="ut-title">Video</span>
+            <span class="ut-sub">Scroll the list</span>
+          </label>
+        </div>
+
+        <p class="privacy-note">
+          🔒 Frames are sampled in your browser and sent only to the vision model to read —
+          the image/video is never stored, and nothing here is saved.
+        </p>
+
+        <div id="scanProgress" class="scan-progress hidden">
+          <div class="bar-track"><div class="bar-fill" id="scanBar" style="width:0%"></div></div>
+          <p class="scan-status" id="scanStatus"></p>
+        </div>
+
+        <!-- CONFIRM / EDIT: always available so manual entry works as a fallback -->
+        <div id="confirmPanel" class="panel-block">
+          <div class="view-head">
+            <h3 class="block-title" style="flex:1">CONFIRM USERNAMES</h3>
+            <span class="pill" id="candCount">0</span>
+          </div>
+          <p class="muted block-sub">
+            Uncheck wrong ones, fix typos, add any the scan missed. Only checked, valid usernames get an Add button.
+          </p>
+          <div id="candList" class="cand-list"></div>
+          <form id="manualAddForm" class="manual-add" autocomplete="off">
+            <span class="ma-at">@</span>
+            <input id="manualAddInput" type="text" inputmode="latin" placeholder="add a username by hand" maxlength="15" aria-label="Add a username by hand" />
+            <button type="submit" class="secondary-button">Add</button>
+          </form>
+          <button id="confirmBtn" class="primary-button confirm-btn">Confirm &amp; build add list</button>
+        </div>
+
+        <!-- ADD QUEUE — swipeable list (tap ADD; swipe a card left to skip) -->
+        <div id="qaddResults" class="hidden">
+          <div class="view-head">
+            <h3 class="block-title" style="flex:1">ADD QUEUE</h3>
+            <span class="pill" id="queueProgress">0 of 0</span>
+            <button id="qaddClear" class="back-btn">Restart</button>
+          </div>
+          <div class="bar-track"><div class="bar-fill" id="queueBar" style="width:0%"></div></div>
+          <p class="muted deck-hint">Tap ADD to add · swipe a card left to skip</p>
+          <button id="undoSkipBtn" class="secondary-button hidden">↩ Undo last skip</button>
+          <div class="result-list" id="qaddList"></div>
+          <p id="queueDone" class="encourage hidden"></p>
+        </div>
+      </section>
+
+      <!-- ===================== STATS (manual logging) ===================== -->
+      <section class="view hidden" data-view="stats">
+        <div class="view-head">
+          <button class="back-btn" data-go="home">‹ MENU</button>
+          <h2 class="view-title">YOUR STATS</h2>
+        </div>
+
+        <div class="panel-block log-panel">
+          <h3 class="block-title">LOG YOUR FUNNEL</h3>
+          <p class="muted block-sub" id="logHint">Tap − / + to log your real numbers. Texting can't exceed Added, Hangout can't exceed Texting.</p>
+          <div class="stepper-row" data-stat="added">
+            <span class="step-label">ADDED</span>
+            <button class="step-btn" type="button" data-step="-1">−</button>
+            <span class="step-val" id="valAdded">0</span>
+            <button class="step-btn" type="button" data-step="1">+</button>
+          </div>
+          <div class="stepper-row" data-stat="texting">
+            <span class="step-label">TEXTING</span>
+            <button class="step-btn" type="button" data-step="-1">−</button>
+            <span class="step-val" id="valTexting">0</span>
+            <button class="step-btn" type="button" data-step="1">+</button>
+          </div>
+          <div class="stepper-row" data-stat="hangout">
+            <span class="step-label">HANGOUT</span>
+            <button class="step-btn" type="button" data-step="-1">−</button>
+            <span class="step-val" id="valHangout">0</span>
+            <button class="step-btn" type="button" data-step="1">+</button>
+          </div>
+        </div>
+
+        <div class="funnel" id="funnel"></div>
+        <div class="stat-cards" id="statCards"></div>
+      </section>
+
+      <!-- ===================== LEADERBOARD ===================== -->
+      <section class="view hidden" data-view="leaderboard">
+        <div class="view-head">
+          <button class="back-btn" data-go="home">‹ MENU</button>
+          <h2 class="view-title">LEADERBOARD</h2>
+        </div>
+        <div class="board-tabs">
+          <button class="board-tab active" data-board="rate">BEST CONVERSION</button>
+          <button class="board-tab" data-board="adds">MOST QUICK ADDS</button>
+        </div>
+        <div class="board-list" id="boardList"></div>
+        <p class="muted block-sub" id="boardNote" style="text-align:center"></p>
+      </section>
+
+      <!-- ===================== STACY'S ===================== -->
+      <section class="view hidden" data-view="stacys">
+        <div class="view-head">
+          <button class="back-btn" data-go="home">‹ MENU</button>
+          <h2 class="view-title">STACY'S ★</h2>
+          <span class="pill" id="sbCount">0</span>
+        </div>
+        <p class="muted block-sub">People you've flagged. Tap ★ to unmark.</p>
+        <div class="mc-group" style="margin-bottom:14px">
+          <span class="mc-label">View</span>
+          <button class="toggle" id="sbToggle" type="button"><span class="knob"></span> Include unmarked (this scan)</button>
+        </div>
+        <div class="result-list" id="sbList"></div>
+        <p id="sbEmpty" class="empty-note hidden">No one on your STACY'S list yet. Mark people ★ from the add list.</p>
+      </section>
+
+      <!-- ===================== ACCOUNT ===================== -->
+      <section class="view hidden" data-view="account">
+        <div class="view-head">
+          <button class="back-btn" data-go="home">‹ MENU</button>
+          <h2 class="view-title">ACCOUNT</h2>
+        </div>
+
+        <!-- ===== LOGGED OUT: login / sign up ===== -->
+        <div id="authPanel" class="panel-block hidden">
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-auth="signup">SIGN UP</button>
+            <button class="auth-tab" data-auth="login">LOG IN</button>
+          </div>
+
+          <form id="loginForm" class="auth-form hidden">
+            <label>Email
+              <input type="email" id="loginEmail" required placeholder="you@email.com" autocomplete="email" />
+            </label>
+            <label>Password
+              <input type="password" id="loginPass" required placeholder="••••••••" autocomplete="current-password" />
+            </label>
+            <button type="submit" class="primary-button">Log in</button>
+            <p class="auth-msg hidden" id="loginMsg"></p>
+          </form>
+
+          <form id="signupForm" class="auth-form">
+            <label>Display name
+              <input type="text" id="suName" placeholder="Penny" maxlength="24" autocomplete="nickname" />
+            </label>
+            <label>Email
+              <input type="email" id="suEmail" required placeholder="you@email.com" autocomplete="email" />
+            </label>
+            <label>Password <span class="muted">(min 8 chars)</span>
+              <input type="password" id="suPass" required placeholder="••••••••" autocomplete="new-password" minlength="8" />
+            </label>
+            <button type="submit" class="primary-button">Create account</button>
+            <p class="auth-msg hidden" id="signupMsg"></p>
+          </form>
+        </div>
+
+        <!-- ===== LOGGED IN: profile + settings ===== -->
+        <div id="profilePanel" class="hidden">
+          <!-- verify-email banner -->
+          <div id="verifyBanner" class="verify-banner hidden">
+            <span>✉️ Verify your email to confirm your account.</span>
+            <button id="resendVerifyBtn" class="secondary-button">Resend link</button>
+          </div>
+          <p id="devVerifyLink" class="dev-verify hidden"></p>
+
+          <!-- profile card with INLINE name edit -->
+          <div class="profile-card">
+            <div class="avatar" id="profileAvatar"></div>
+            <div class="profile-meta">
+              <div class="name-edit">
+                <input type="text" id="nameInput" maxlength="24" aria-label="Display name" />
+                <button id="saveNameBtn" class="primary-button">Save</button>
+              </div>
+              <p class="muted" id="profileEmail">—</p>
+              <div class="rank-badge" id="profileRank">RANK —</div>
+            </div>
+          </div>
+
+          <div class="stat-cards" id="profileStats"></div>
+
+          <!-- level / XP / streak -->
+          <div class="panel-block prog-block">
+            <div class="prog-top">
+              <div>
+                <div class="prog-level" id="progLevel">LV 1</div>
+                <div class="prog-rank" id="progRank">ROOKIE</div>
+              </div>
+              <div class="streak" id="streakBox">
+                <span class="streak-flame">🔥</span>
+                <span class="streak-num" id="streakNum">0</span>
+                <span class="streak-lbl">day streak</span>
+              </div>
+            </div>
+            <div class="xp-row">
+              <div class="bar-track"><div class="bar-fill" id="xpBar" style="width:0%"></div></div>
+              <span class="xp-label" id="xpLabel">0 / 100 XP</span>
+            </div>
+            <p class="streak-warn hidden" id="streakWarn"></p>
+            <p class="encourage" id="progEncourage"></p>
+          </div>
+
+          <!-- weekly summary -->
+          <div class="panel-block">
+            <h3 class="block-title">THIS WEEK</h3>
+            <div class="stat-cards" id="weeklyCards"></div>
+          </div>
+
+          <!-- achievements -->
+          <div class="panel-block">
+            <h3 class="block-title">ACHIEVEMENTS</h3>
+            <div class="ach-grid" id="achGrid"></div>
+          </div>
+
+          <!-- skins -->
+          <div class="panel-block">
+            <h3 class="block-title">SKINS</h3>
+            <p class="muted block-sub">Unlock by leveling up, then pick what's active.</p>
+            <div id="skinChooser"></div>
+          </div>
+
+          <!-- shareable add link + QR -->
+          <div class="panel-block">
+            <h3 class="block-title">YOUR ADD LINK</h3>
+            <p class="muted block-sub">Set your Snapchat username so people can add you back.</p>
+            <div class="manual-add">
+              <span class="ma-at">@</span>
+              <input id="snapUserInput" type="text" inputmode="latin" placeholder="your snapchat username" maxlength="15" aria-label="Your Snapchat username" />
+              <button id="snapUserSave" class="secondary-button" type="button">Save</button>
+            </div>
+            <div id="shareBox" class="share-box hidden">
+              <img id="shareQR" class="share-qr" alt="Add QR" />
+              <div class="share-meta">
+                <a id="shareLink" class="share-link" href="#" rel="noopener"></a>
+                <button id="shareCopy" class="secondary-button" type="button">Copy link</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- public-profile toggle -->
+          <div class="panel-block">
+            <h3 class="block-title">PROFILE VISIBILITY</h3>
+            <div class="conn-row">
+              <div class="conn-info">
+                <strong>Public profile</strong>
+                <span class="muted" id="publicHint">When ON, people who add you can see your display name and groups.</span>
+              </div>
+              <button class="toggle" id="publicToggle" type="button" aria-label="Public profile"><span class="knob"></span></button>
+            </div>
+          </div>
+
+          <!-- your groups (your own data; shown on your card to people who scan you) -->
+          <div class="panel-block">
+            <h3 class="block-title">YOUR GROUPS</h3>
+            <p class="muted block-sub">Comma-separated. Shown on your card to other site users (when your profile is public).</p>
+            <div class="manual-add">
+              <input id="groupsInput" type="text" placeholder="e.g. Gym, CS Club, Roommates" aria-label="Your groups, comma separated" />
+              <button id="groupsSave" class="secondary-button" type="button">Save</button>
+            </div>
+          </div>
+
+          <!-- connected accounts -->
+          <div class="panel-block">
+            <h3 class="block-title">CONNECTED ACCOUNTS</h3>
+            <div class="conn-row" id="snapConnRow">
+              <div class="conn-ic">👻</div>
+              <div class="conn-info">
+                <strong>Snapchat</strong>
+                <span class="muted" id="snapConnText">Checking…</span>
+              </div>
+              <button id="snapConnBtn" class="primary-button">Connect</button>
+            </div>
+            <p class="conn-error hidden" id="snapConnError"></p>
+          </div>
+
+          <!-- change password -->
+          <div class="panel-block">
+            <h3 class="block-title">CHANGE PASSWORD</h3>
+            <form id="pwForm" class="auth-form" autocomplete="off">
+              <label>Current password
+                <input type="password" id="pwCurrent" required autocomplete="current-password" />
+              </label>
+              <label>New password <span class="muted">(8+ chars, letters &amp; a number)</span>
+                <input type="password" id="pwNext" required autocomplete="new-password" minlength="8" />
+              </label>
+              <button type="submit" class="secondary-button">Update password</button>
+              <p class="auth-msg hidden" id="pwMsg"></p>
+            </form>
+          </div>
+
+          <!-- actions -->
+          <div class="panel-block">
+            <h3 class="block-title">ACCOUNT ACTIONS</h3>
+            <div class="controls">
+              <button id="logoutBtn" class="secondary-button danger">Log out</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <div class="footer-links">
+        <a href="#" data-go="home">HOME</a>
+        <a href="#" data-go="qadd">SCAN</a>
+        <a href="#" data-go="leaderboard">LEADERBOARD</a>
+        <a href="#" data-go="account">ACCOUNT</a>
+      </div>
+      <div class="footer-status">
+        <span id="activeScouts">ACTIVE SCOUTS: 287</span>
+        <span class="status-light green"></span>
+        <span>V 1.0.0</span>
+        <span class="status-light red"></span>
+      </div>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- confirm dialog -->
+  <div id="confirmDialog" class="lightbox hidden" role="dialog" aria-modal="true">
+    <div class="lb-backdrop" data-cd-cancel></div>
+    <div class="cd-card">
+      <p class="cd-msg" id="cdMsg"></p>
+      <div class="cd-actions">
+        <button class="secondary-button" type="button" data-cd-cancel>Cancel</button>
+        <button class="primary-button danger" type="button" id="cdOk">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- avatar lightbox -->
+  <div id="lightbox" class="lightbox hidden">
+    <div class="lb-backdrop" data-lb-close></div>
+    <div class="lb-card">
+      <button class="lb-close" data-lb-close aria-label="Close">✕</button>
+      <img id="lbImg" alt="profile picture" />
+    </div>
+  </div>
+
+  <!-- desktop guard: this app is phone-only -->
+  <div class="desktop-guard">
+    <div class="dg-card">
+      <div class="dg-emoji">📱</div>
+      <h2>OPEN ON YOUR PHONE</h2>
+      <p>SNAP//QUICKADD is a mobile-only app. Open it on your phone (or narrow this window) to continue.</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
