@@ -55,3 +55,4 @@ npm start                   # http://localhost:3000   (npm run dev = --watch)
   Lookup opens the app and copies the name for a one-tap paste.
 - Snapchat **Snapcode** generation needs Snap's API; the share view shows a plain
   QR of the user's `snapchat.com/add/<username>` link instead.
+# quickadd
