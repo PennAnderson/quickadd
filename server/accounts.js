@@ -21,7 +21,9 @@ const RE_SNAP = /^[a-z][a-z0-9._-]{2,14}$/;
 const todayUTC = () => new Date().toISOString().slice(0, 10);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, 'data');
+// DATA_DIR is configurable so a hosted persistent disk (e.g. Render) can mount
+// here and accounts survive restarts/redeploys. Defaults to ./server/data.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'users.json');
 
 export const MAIL_DEV = !process.env.SMTP_HOST; // no SMTP → show link in UI

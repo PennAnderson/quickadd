@@ -65,7 +65,8 @@ const FileStore = FileStoreFactory(session);
 app.use(session({
   name: 'sqa.sid',
   store: new FileStore({
-    path: path.join(__dirname, 'data', 'sessions'),
+    // same DATA_DIR as accounts → lands on the persistent disk in production
+    path: path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'sessions'),
     ttl: 60 * 60 * 24 * 30,      // 30 days
     retries: 1,
     logFn: () => {},             // quiet
@@ -341,10 +342,16 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'server_error' });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`SNAP//QUICKADD on http://localhost:${PORT}  ${DEMO ? '(DEMO — no Snap creds)' : '(live OAuth)'}${PROD ? ' [prod]' : ''}`);
-});
-// don't crash the process on an unexpected error
+const isVercel = Boolean(process.env.VERCEL);
+
+if (!isVercel) {
+  const server = app.listen(PORT, () => {
+    console.log(`SNAP//QUICKADD on http://localhost:${PORT}  ${DEMO ? '(DEMO — no Snap creds)' : '(live OAuth)'}${PROD ? ' [prod]' : ''}`);
+  });
+  // don't crash the process on an unexpected error
+  process.on('SIGTERM', () => server.close(() => process.exit(0)));
+}
+
+export default app;
 process.on('unhandledRejection', e => console.error('[unhandledRejection]', e?.message || e));
 process.on('uncaughtException', e => console.error('[uncaughtException]', e?.message || e));
-process.on('SIGTERM', () => server.close(() => process.exit(0)));

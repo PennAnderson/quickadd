@@ -3,3 +3,8 @@ node_modules/
 *.log
 .DS_Store
 server/data/
+.vercel
+.env*
+vercel-import.env
+*.env
+files.zip

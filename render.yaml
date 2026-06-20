@@ -1,0 +1,51 @@
+# Render Blueprint — deploy as a Node web service with a persistent disk so
+# accounts + sessions survive restarts/redeploys.
+# In Render: New → Blueprint → connect this repo → it reads this file.
+# Then fill in the secret env vars (marked sync:false) in the dashboard.
+services:
+  - type: web
+    name: dd-method
+    runtime: node
+    plan: starter            # a persistent disk requires a paid instance (Free has no disk)
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /var/data   # matches DATA_DIR below → users.json + sessions live here
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: DATA_DIR
+        value: /var/data
+      - key: SCAN_MODEL
+        value: claude-opus-4-8
+      # ---- secrets: set these in the Render dashboard (not in git) ----
+      - key: SESSION_SECRET
+        generateValue: true   # Render generates a strong random value
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SNAP_CLIENT_ID
+        sync: false
+      - key: SNAP_CLIENT_SECRET
+        sync: false
+      - key: SNAP_REDIRECT_URI
+        sync: false           # set to https://<your-render-url>/api/auth/callback
+      - key: SNAP_SCOPES
+        sync: false
+      # ---- email (optional; leave blank to keep dev-mode verify links) ----
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
